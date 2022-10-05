@@ -31,6 +31,19 @@ void initialize(){
 
 }
 
+/*
+        =^           *********         @^       ***** =@^     
+       @@@@@@@@@@.   @^     =@.        @^      *@^ @^ =@^     
+     =@@@@@@@@@@.    @^     =@.        @^      *@^=@. =@^     
+       =@OOOOOO@.    @@@@@@@@@.    =@. @^ =^   *@^@^  =@^     
+       =@     =@.    @^     =@.    @^  @^ =@^  *@^=@. =@@     
+       ,[@/[[[[[.    @^     =@.   ,@.  @^  \@. *@^.@\ @/@`    
+       @@@@@@@@@     @@@@@@@@@         @       @@  @  @ @     
+     ./@[\\..@/                   ,    @^   .  *@^@@`/^  \`   
+         .@@@\.    ]]]]]]]]]]]]]       @^      *@^ ./^   ,@\  
+     =@@@/[  [[@@/ ,[[[[[[[[[[[[     ,@/.      *@^.\/     ,/. 
+*/
+
 void print_logo(){
   Brain.Screen.print("   =^           *********         @^       ***** =@^     ");
   Brain.Screen.newLine();
@@ -44,7 +57,7 @@ void print_logo(){
   Brain.Screen.newLine();
   Brain.Screen.print("  ,[@/[[[[[.    @^     =@.   ,@.  @^  \@. *@^.@\ @/@` ");
   Brain.Screen.newLine();
-  Brain.Screen.print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ ");
+  Brain.Screen.print("  @@@@@@@@@     @@@@@@@@@         @       @@  @  @ @     ");
   Brain.Screen.newLine();
   Brain.Screen.print("./@[\\..@/                   ,    @^   .  *@^@@`/^  \`  ");
   Brain.Screen.newLine();
@@ -66,6 +79,17 @@ void select_mode(int &mode){
   if(Controller1.ButtonL2.pressing()) mode=1;
   if(Controller1.ButtonR2.pressing()) mode=2;
   Controller1.Screen.clearScreen();
+}
+
+void hint(int mode){
+  Controller1.Screen.setCursor(1,1);
+  Controller1.Screen.print("Your choice: Mode %d",mode);
+  Controller1.Screen.newLine();
+  Controller1.Screen.print("Press L2/R2 to quit");
+  if(mode==2){
+  Controller1.Screen.newLine();
+  Controller1.Screen.print("Press X to reset");
+  }
 }
 void print_v(motor m,int row){  //To monitor the motors
   //Brain Output
@@ -119,33 +143,26 @@ void sudden_break(){
 }
 */
 
-/*
-        =^           *********         @^       ***** =@^     
-       @@@@@@@@@@.   @^     =@.        @^      *@^ @^ =@^     
-     =@@@@@@@@@@.    @^     =@.        @^      *@^=@. =@^     
-       =@OOOOOO@.    @@@@@@@@@.    =@. @^ =^   *@^@^  =@^     
-       =@     =@.    @^     =@.    @^  @^ =@^  *@^=@. =@@     
-       ,[@/[[[[[.    @^     =@.   ,@.  @^  \@. *@^.@\ @/@`    
-    =@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ 
-     ./@[\\..@/                   ,    @^   .  *@^@@`/^  \`   
-         .@@@\.    ]]]]]]]]]]]]]       @^      *@^ ./^   ,@\  
-     =@@@/[  [[@@/ ,[[[[[[[[[[[[     ,@/.      *@^.\/     ,/. 
-*/
+
 int main() {
   // Initializing Robot Configuration. DO NOT REMOVE!
   vexcodeInit();
   // Initialize the inertial censor 
+  initialize();
   print_logo();
   int mode;
   while(1){
   select_mode(mode);
-  if(mode==2) initialize();
-  Controller1.Screen.setCursor(1,1);
-  Controller1.Screen.print("Your choice: Mode %d",mode);
-  Controller1.Screen.newLine();
-  Controller1.Screen.print("Press L2/R2 to quit");
+  hint(mode);
+
   while (1) {
     waitUntil(!Controller1.ButtonL2.pressing()&&!Controller1.ButtonR2.pressing());
+    //waitUntil(!Controller1.ButtonL1.pressing());
+    if(Controller1.ButtonX.pressing()){
+      if(mode==2) Inertial3.setRotation(0, degrees);
+      hint(mode);
+    }
+
     int y= Controller1.Axis3.position(pct);
     int x= Controller1.Axis4.position(pct);
 
@@ -160,9 +177,9 @@ int main() {
 
     //get the translation volocity
     double scale_a,scale_b,scale_c;
-    get_translation_scale(point_angle,scale/1000,scale_a,scale_b,scale_c);
+    get_translation_scale(point_angle,scale/100,scale_a,scale_b,scale_c);
     //get the rotation volocity
-    double rotation_scale = get_rotation_scale(Controller1.Axis1.position(pct),0.1);
+    double rotation_scale = get_rotation_scale(Controller1.Axis1.position(pct),0.5);
 
     //drive the motor!
     movement(Motor1,Motor11,Motor20,scale_a,scale_b,scale_c,rotation_scale);
