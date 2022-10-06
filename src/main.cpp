@@ -55,15 +55,15 @@ void print_logo(){
   Brain.Screen.newLine();
   Brain.Screen.print("  =@     =@.    @^     =@.    @^  @^ =@^  *@^=@. =@@ ");
   Brain.Screen.newLine();
-  Brain.Screen.print("  ,[@/[[[[[.    @^     =@.   ,@.  @^  \@. *@^.@\ @/@` ");
+  Brain.Screen.print("  ,[@/[[[[[.    @^     =@.   ,@.  @^  \\@. *@^.@\\ @/@` ");
   Brain.Screen.newLine();
   Brain.Screen.print("  @@@@@@@@@     @@@@@@@@@         @       @@  @  @ @     ");
   Brain.Screen.newLine();
-  Brain.Screen.print("./@[\\..@/                   ,    @^   .  *@^@@`/^  \`  ");
+  Brain.Screen.print("./@[\\..@/                   ,    @^   .  *@^@@`/^  \\`  ");
   Brain.Screen.newLine();
-  Brain.Screen.print("    .@@@\.    ]]]]]]]]]]]]]       @^      *@^ ./^   ,@\ ");
+  Brain.Screen.print("    .@@@\\.    ]]]]]]]]]]]]]       @^      *@^ ./^   ,@\\ ");
   Brain.Screen.newLine();
-  Brain.Screen.print("=@@@/[  [[@@/ ,[[[[[[[[[[[[     ,@/.      *@^.\/     ,/. ");
+  Brain.Screen.print("=@@@/[  [[@@/ ,[[[[[[[[[[[[     ,@/.      *@^.\\/     ,/. ");
   Brain.Screen.newLine();
 }
 void select_mode(int &mode){
@@ -128,20 +128,30 @@ double get_rotation_scale(double rotate,double scale){
   return rotate*scale;
 }
 
-void movement(motor a,motor b,motor c,double scale_a,double scale_b,double scale_c,double ROTATION){
+void movement(motor a,motor b,motor c,double scale_a,double scale_b,double scale_c,double ROTATION){//,double cal_angle){
+
   //calculate the actual volocity(also referred to as scale in this code) needed for each motor
   run(a,scale_a+ROTATION);//top
   run(b,scale_b+ROTATION);//bottom left
   run(c,scale_c+ROTATION);//bottom right
+  //correction?
+  /*
+    while(cal_angle-Inertial3.rotation(degrees)*PI/180>PI/10)
+  {
+    run(a,10);
+    run(b,10);
+    run(c,10);
+  }
+    while(Inertial3.rotation(degrees)*PI/180-cal_angle>PI/10)
+  {
+    run(a,-10);
+    run(b,-10);
+    run(c,-10);
+  }
+  */
+  
+  
 }
-
-/*
-void sudden_break(){
-  Motor1.stop();
-  Motor11.stop();
-  Motor20.stop();
-}
-*/
 
 
 int main() {
@@ -154,14 +164,19 @@ int main() {
   while(1){
   select_mode(mode);
   hint(mode);
-
+  /*
+  Brain.resetTimer();
+  double last_t=0;
+  double calculate_angle = 0;
+  */
   while (1) {
+    
     waitUntil(!Controller1.ButtonL2.pressing()&&!Controller1.ButtonR2.pressing());
-    //waitUntil(!Controller1.ButtonL1.pressing());
     if(Controller1.ButtonX.pressing()){
-      if(mode==2) Inertial3.setRotation(0, degrees);
+      if(mode==2) {Inertial3.setRotation(0, degrees);} //calculate_angle = 0;}
       hint(mode);
     }
+    
 
     int y= Controller1.Axis3.position(pct);
     int x= Controller1.Axis4.position(pct);
@@ -173,23 +188,27 @@ int main() {
     double point_angle;
     //the angle must be revise by the 
     if(mode==1) x=0; point_angle = calculate_theta(y,x); 
-    if(mode==2) point_angle = calculate_theta(y,x)-Inertial3.rotation(degrees)/180*PI; 
+    if(mode==2) point_angle = calculate_theta(y,x)-Inertial3.rotation(degrees)*PI/180; 
 
     //get the translation volocity
     double scale_a,scale_b,scale_c;
     get_translation_scale(point_angle,scale/100,scale_a,scale_b,scale_c);
     //get the rotation volocity
     double rotation_scale = get_rotation_scale(Controller1.Axis1.position(pct),0.5);
-
+    //double delta_t= Brain.Timer.time(msec)-last_t;
+    //get the rotation angle
+    //calculate_angle += 0.0031*rotation_scale*delta_t*6/180*PI;
+    
     //drive the motor!
     movement(Motor1,Motor11,Motor20,scale_a,scale_b,scale_c,rotation_scale);
-    
+
     //print the message on the screen
     //print_v(Motor1,1);
     //print_v(Motor11,2);
     //print_v(Motor20,3);
     //if (Controller1.ButtonX.pressing()) {sudden_break();break;}
-    wait(20, msec);
+    //last_t=Brain.Timer.time(msec);
+    wait(10, msec);
     if(Controller1.ButtonL2.pressing()) break;
     if(Controller1.ButtonR2.pressing()) break;
   }
