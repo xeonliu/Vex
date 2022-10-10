@@ -18,6 +18,7 @@
 // ---- END VEXCODE CONFIGURED DEVICES ----
 
 #include "vex.h"
+#include <iostream>
 #define PI 3.1415926
 
 using namespace vex;
@@ -127,30 +128,27 @@ double get_rotation_scale(double rotate,double scale){
   //calculate what it take for each motor to rotate
   return rotate*scale;
 }
+/*
+double PID(){
+    double Kp=0.6,Ki=0.1,Kd=0.05;
+    double delta_t= Brain.Timer.time(msec)-last_t;
+    rotation_angle += 0.0031*rotation_scale*delta_t*6/180*PI; //get the rotation angle
+    double actual_angle = Inertial3.rotation(degrees)*PI/180; //get the actual angle
+    double error = rotation_angle-actual_angle;
+    integral = integral + error*delta_t;
+    double derivative = (error - previous_error) /delta_t;
+    double correction_output = (Kp*error + Ki * integral + Kd * derivative)*10;
+    previous_error = error;
+    last_t = Brain.Timer.time(msec);
+}
+*/
 
-void movement(motor a,motor b,motor c,double scale_a,double scale_b,double scale_c,double ROTATION){//,double cal_angle){
+void movement(motor a,motor b,motor c,double scale_a,double scale_b,double scale_c,double ROTATION,double CORRECTION){
 
   //calculate the actual volocity(also referred to as scale in this code) needed for each motor
-  run(a,scale_a+ROTATION);//top
-  run(b,scale_b+ROTATION);//bottom left
-  run(c,scale_c+ROTATION);//bottom right
-  //correction?
-  /*
-    while(cal_angle-Inertial3.rotation(degrees)*PI/180>PI/10)
-  {
-    run(a,10);
-    run(b,10);
-    run(c,10);
-  }
-    while(Inertial3.rotation(degrees)*PI/180-cal_angle>PI/10)
-  {
-    run(a,-10);
-    run(b,-10);
-    run(c,-10);
-  }
-  */
-  
-  
+  run(a,scale_a+CORRECTION);//top
+  run(b,scale_b+CORRECTION);//bottom left
+  run(c,scale_c+CORRECTION);//bottom right  
 }
 
 
@@ -164,16 +162,17 @@ int main() {
   while(1){
   select_mode(mode);
   hint(mode);
-  /*
+  
   Brain.resetTimer();
   double last_t=0;
-  double calculate_angle = 0;
-  */
+  double rotation_angle = 0;
+  double integral=0;
+  double previous_error=0;
   while (1) {
     
     waitUntil(!Controller1.ButtonL2.pressing()&&!Controller1.ButtonR2.pressing());
     if(Controller1.ButtonX.pressing()){
-      if(mode==2) {Inertial3.setRotation(0, degrees);} //calculate_angle = 0;}
+      if(mode==2) {Inertial3.setRotation(0, degrees);rotation_angle = 0;} //calculate_angle = 0;}
       hint(mode);
     }
     
@@ -194,13 +193,23 @@ int main() {
     double scale_a,scale_b,scale_c;
     get_translation_scale(point_angle,scale/100,scale_a,scale_b,scale_c);
     //get the rotation volocity
-    double rotation_scale = get_rotation_scale(Controller1.Axis1.position(pct),0.5);
-    //double delta_t= Brain.Timer.time(msec)-last_t;
-    //get the rotation angle
-    //calculate_angle += 0.0031*rotation_scale*delta_t*6/180*PI;
+    double rotation_scale = get_rotation_scale(Controller1.Axis1.position(pct),0.1);
+    //get the correction value (Using PID)
+    double Kp=0.60,Ki=0,Kd=0.05;
+    double delta_t= Brain.Timer.time(msec)-last_t;
+    rotation_angle += 0.0031*rotation_scale*delta_t*6/180*PI; //get the rotation angle
+    double actual_angle = Inertial3.rotation(degrees)*PI/180; //get the actual angle
+    double error = rotation_angle-actual_angle;
+    integral = integral + error*delta_t;
+    double derivative = (error - previous_error) /delta_t;
+    double correction_output=0;
+    std::cout << rotation_angle <<' '<<error<<std::endl;
+    if (error>PI/10||error<-PI/10) correction_output = (Kp*error + Ki * integral + Kd * derivative)*100;
+    previous_error = error;
+    last_t = Brain.Timer.time(msec);
     
     //drive the motor!
-    movement(Motor1,Motor11,Motor20,scale_a,scale_b,scale_c,rotation_scale);
+    movement(Motor1,Motor11,Motor20,scale_a,scale_b,scale_c,rotation_scale,correction_output);
 
     //print the message on the screen
     //print_v(Motor1,1);
